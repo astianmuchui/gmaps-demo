@@ -1,232 +1,223 @@
-<!--
-    Copyright 2023 Google LLC
 
-    Licensed under the Apache License, Version 2.0 (the "License");
-    you may not use this file except in compliance with the License.
-    You may obtain a copy of the License at
+<!DOCTYPE html>
+<html>
 
-        https://www.apache.org/licenses/LICENSE-2.0
-
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
-  -->
-  <!DOCTYPE html>
-  <html>
-    <head>
-      <title>Address Selection</title>
-      <style>
-        *{
+<head>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <title>Address Selection</title>
+    <style>
+        * {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
         }
+
         body {
-          margin: 0;
+            margin: 0;
         }
-  
+
         .sb-title {
-          position: relative;
-          top: -12px;
-          font-family: Roboto, sans-serif;
-          font-weight: 500;
+            position: relative;
+            top: -12px;
+            font-family: Roboto, sans-serif;
+            font-weight: 500;
         }
-  
+
         .sb-title-icon {
-          position: relative;
-          top: -5px;
+            position: relative;
+            top: -5px;
         }
-  
+
         gmpx-split-layout {
-          height: 500px;
-          width: 600px;
+            height: 500px;
+            width: 600px;
         }
-  
+
         gmpx-split-layout:not(:defined) {
-          visibility: hidden;
+            visibility: hidden;
         }
-  
+
         .panel {
-          background: white;
-          box-sizing: border-box;
-          height: 100%;
-          width: 100%;
-          padding: 20px;
-          display: flex;
-          flex-direction: column;
-          justify-content: space-around;
+            background: white;
+            box-sizing: border-box;
+            height: 100%;
+            width: 100%;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
         }
-  
+
         .half-input-container {
-          display: flex;
-          justify-content: space-between;
+            display: flex;
+            justify-content: space-between;
         }
-  
+
         .half-input {
-          max-width: 120px;
+            max-width: 120px;
         }
-  
+
         h2 {
-          margin: 0;
-          font-family: Roboto, sans-serif;
+            margin: 0;
+            font-family: Roboto, sans-serif;
         }
-  
+
         input {
-          height: 30px;
+            height: 30px;
         }
-  
+
         input {
-          border: 0;
-          border-bottom: 1px solid black;
-          font-size: 14px;
-          font-family: Roboto, sans-serif;
-          font-style: normal;
-          font-weight: normal;
+            border: 0;
+            border-bottom: 1px solid black;
+            font-size: 14px;
+            font-family: Roboto, sans-serif;
+            font-style: normal;
+            font-weight: normal;
         }
-  
+
         input:focus::placeholder {
-          color: white;
+            color: white;
         }
-      </style>
-      <script type="module">
+    </style>
+    <script type="module">
         "use strict";
-  
+
         // This loads helper components from the Extended Component Library,
         // https://github.com/googlemaps/extended-component-library.
         // Please note unpkg.com is unaffiliated with Google Maps Platform.
-        import {APILoader} from 'https://unpkg.com/@googlemaps/extended-component-library@0.6';
-  
+        import { APILoader } from 'https://unpkg.com/@googlemaps/extended-component-library@0.6';
+
         const CONFIGURATION = {
-          "ctaTitle": "Set address",
-          "mapOptions": {"center":{"lat":37.4221,"lng":-122.0841},"fullscreenControl":true,"mapTypeControl":false,"streetViewControl":true,"zoom":11,"zoomControl":true,"maxZoom":22,"mapId":""},
-          "mapsApiKey": "AIzaSyBUeB0nTyMsycXXzPYKWuzK-Zy_DHmXfac",
-          "capabilities": {"addressAutocompleteControl":true,"mapDisplayControl":true,"ctaControl":true}
+            "ctaTitle": "Set address",
+            "mapOptions": { "center": { "lat": 37.4221, "lng": -122.0841 }, "fullscreenControl": true, "mapTypeControl": false, "streetViewControl": true, "zoom": 11, "zoomControl": true, "maxZoom": 22, "mapId": "" },
+            "mapsApiKey": "AIzaSyBUeB0nTyMsycXXzPYKWuzK-Zy_DHmXfac",
+            "capabilities": { "addressAutocompleteControl": true, "mapDisplayControl": true, "ctaControl": true }
         };
-  
+
         const SHORT_NAME_ADDRESS_COMPONENT_TYPES =
             new Set(['street_number', 'administrative_area_level_1', 'postal_code']);
-  
+
         const ADDRESS_COMPONENT_TYPES_IN_FORM = [
-          'location',
-          'locality',
-          'administrative_area_level_1',
-          'postal_code',
-          'country',
+            'location',
+            'locality',
+            'administrative_area_level_1',
+            'postal_code',
+            'country',
         ];
-  
+
         function getFormInputElement(componentType) {
-          return document.getElementById(`${componentType}-input`);
+            return document.getElementById(`${componentType}-input`);
         }
-  
+
         function fillInAddress(place) {
-          function getComponentName(componentType) {
-            for (const component of place.address_components || []) {
-              if (component.types[0] === componentType) {
-                return SHORT_NAME_ADDRESS_COMPONENT_TYPES.has(componentType) ?
-                    component.short_name :
-                    component.long_name;
-              }
+            function getComponentName(componentType) {
+                for (const component of place.address_components || []) {
+                    if (component.types[0] === componentType) {
+                        return SHORT_NAME_ADDRESS_COMPONENT_TYPES.has(componentType) ?
+                            component.short_name :
+                            component.long_name;
+                    }
+                }
+                return '';
             }
-            return '';
-          }
-  
-          function getComponentText(componentType) {
-            return (componentType === 'location') ?
-                `${getComponentName('street_number')} ${getComponentName('route')}` :
-                getComponentName(componentType);
-          }
-  
-          for (const componentType of ADDRESS_COMPONENT_TYPES_IN_FORM) {
-            getFormInputElement(componentType).value = getComponentText(componentType);
-          }
+
+            function getComponentText(componentType) {
+                return (componentType === 'location') ?
+                    `${getComponentName('street_number')} ${getComponentName('route')}` :
+                    getComponentName(componentType);
+            }
+
+            for (const componentType of ADDRESS_COMPONENT_TYPES_IN_FORM) {
+                getFormInputElement(componentType).value = getComponentText(componentType);
+            }
         }
-  
+
         function renderAddress(place) {
-          const mapEl = document.querySelector('gmp-map');
-          const markerEl = document.querySelector('gmp-advanced-marker');
-  
-          if (place.geometry && place.geometry.location) {
-            mapEl.center = place.geometry.location;
-            markerEl.position = place.geometry.location;
-          } else {
-            markerEl.position = null;
-          }
-        }
-  
-        async function initMap() {
-          const {Autocomplete} = await APILoader.importLibrary('places');
-  
-          const mapOptions = CONFIGURATION.mapOptions;
-          mapOptions.mapId = mapOptions.mapId || 'DEMO_MAP_ID';
-          mapOptions.center = mapOptions.center || {lat: 37.4221, lng: -122.0841};
-  
-          await customElements.whenDefined('gmp-map');
-          document.querySelector('gmp-map').innerMap.setOptions(mapOptions);
-          const autocomplete = new Autocomplete(getFormInputElement('location'), {
-            fields: ['address_components', 'geometry', 'name'],
-            types: ['address'],
-          });
-  
-          autocomplete.addListener('place_changed', () => {
-            const place = autocomplete.getPlace();
-            if (!place.geometry) {
-              // User entered the name of a Place that was not suggested and
-              // pressed the Enter key, or the Place Details request failed.
-              window.alert(`No details available for input: '${place.name}'`);
-              return;
+            const mapEl = document.querySelector('gmp-map');
+            const markerEl = document.querySelector('gmp-advanced-marker');
+
+            if (place.geometry && place.geometry.location) {
+                mapEl.center = place.geometry.location;
+                markerEl.position = place.geometry.location;
+            } else {
+                markerEl.position = null;
             }
-            renderAddress(place);
-            fillInAddress(place);
-          });
         }
-  
+
+        async function initMap() {
+            const { Autocomplete } = await APILoader.importLibrary('places');
+
+            const mapOptions = CONFIGURATION.mapOptions;
+            mapOptions.mapId = mapOptions.mapId || 'DEMO_MAP_ID';
+            mapOptions.center = mapOptions.center || { lat: 37.4221, lng: -122.0841 };
+
+            await customElements.whenDefined('gmp-map');
+            document.querySelector('gmp-map').innerMap.setOptions(mapOptions);
+            const autocomplete = new Autocomplete(getFormInputElement('location'), {
+                fields: ['address_components', 'geometry', 'name'],
+                types: ['address'],
+            });
+
+            autocomplete.addListener('place_changed', () => {
+                const place = autocomplete.getPlace();
+                if (!place.geometry) {
+                    // User entered the name of a Place that was not suggested and
+                    // pressed the Enter key, or the Place Details request failed.
+                    window.alert(`No details available for input: '${place.name}'`);
+                    return;
+                }
+                renderAddress(place);
+                fillInAddress(place);
+            });
+        }
+
         initMap();
-      </script>
-    </head>
-    <body>
-      <gmpx-api-loader key="AIzaSyBUeB0nTyMsycXXzPYKWuzK-Zy_DHmXfac" solution-channel="GMP_QB_addressselection_v3_cABC">
-      </gmpx-api-loader>
-      <gmpx-split-layout row-layout-min-width="600">
+    </script>
+</head>
+
+<body class="flex flex-col items-center content-center">
+    <gmpx-api-loader key="AIzaSyBUeB0nTyMsycXXzPYKWuzK-Zy_DHmXfac" solution-channel="GMP_QB_addressselection_v3_cABC">
+    </gmpx-api-loader>
+    <gmpx-split-layout row-layout-min-width="600">
         <div class="panel" slot="fixed">
-          <div>
-            <img class="sb-title-icon" src="https://fonts.gstatic.com/s/i/googlematerialicons/location_pin/v5/24px.svg" alt="">
-            <span class="sb-title">Address Selection</span>
-          </div>
-          <input type="text" placeholder="Address" id="location-input"/>
-          <input type="text" placeholder="Apt, Suite, etc (optional)"/>
-          <input type="text" placeholder="City" id="locality-input"/>
-          <div class="half-input-container">
-            <input type="text" class="half-input" placeholder="State/Province" id="administrative_area_level_1-input"/>
-            <input type="text" class="half-input" placeholder="Zip/Postal code" id="postal_code-input"/>
-          </div>
-          <input type="text" placeholder="Country" id="country-input"/>
-          <gmpx-icon-button variant="filled" id="btn-submit">Set address</gmpx-icon-button>
+            <div>
+                <span class="sb-title">Address Selection</span>
+            </div>
+            <input type="text" placeholder="Address " id="location-input" />
+            <input type="text" placeholder="Apt, Suite, etc (optional) " />
+            <input type="text" placeholder="City " id="locality-input" />
+            <div class="half-input-container">
+                <input type="text" class="half-input" placeholder="State/Province "
+                    id="administrative_area_level_1-input" />
+                <input type="text" class="half-input" placeholder="Zip/Postal code " id="postal_code-input" />
+            </div>
+            <input type="text" placeholder="Country " id="country-input" />
+            <gmpx-icon-button variant="filled" id="btn-submit">Set address</gmpx-icon-button>
         </div>
         <gmp-map slot="main">
-          <gmp-advanced-marker></gmp-advanced-marker>
+            <gmp-advanced-marker></gmp-advanced-marker>
         </gmp-map>
-      </gmpx-split-layout>
+    </gmpx-split-layout>
 
-    <div id="data-display"></div>
-      <script>
-    document.getElementById('btn-submit').addEventListener('click', function() {
-        const addressInputs = document.querySelectorAll('input[type="text"]');
-        const dataDisplay = document.getElementById('data-display');
-        dataDisplay.innerHTML = '';
+    <div id="data-display" class="bg-gray-100 rounded-xl p-12 box-content mt-12 "></div>
+    <script>
+        document.getElementById('btn-submit').addEventListener('click', function () {
+            const addressInputs = document.querySelectorAll('input[type="text"]');
+            const dataDisplay = document.getElementById('data-display');
+            dataDisplay.innerHTML = '';
 
-        addressInputs.forEach(function(input) {
-            const label = document.createElement('label');
-            label.textContent = input.placeholder + " ";
-            const value = document.createElement('span');
-            value.textContent = input.value;
-            const lineBreak = document.createElement('br');
+            addressInputs.forEach(function (input) {
+                const label = document.createElement('label');
+                label.textContent = input.placeholder + " ";
+                const value = document.createElement('span');
+                value.textContent = ": " + input.value;
+                const lineBreak = document.createElement('br');
 
-            dataDisplay.appendChild(label);
-            dataDisplay.appendChild(value);
-            dataDisplay.appendChild(lineBreak);
+                dataDisplay.appendChild(label);
+                dataDisplay.appendChild(value);
+                dataDisplay.appendChild(lineBreak);
+            });
         });
-    });
 
-      </script>
-    </body>
-  </html>
+    </script>
+</body>
+
+</html>
